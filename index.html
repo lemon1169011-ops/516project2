@@ -276,34 +276,35 @@
         // --- AUDIO ENGINE SETUP (Tone.js & Web Speech API) ---
         let toneStarted = false;
         
-        // Synths for Sound Effects
+        // Synths for Sound Effects (Adjusted volume for realistic web environment)
         const correctSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-        correctSynth.volume.value = 2; // 增加答对音量
+        correctSynth.volume.value = 0; // Default sensible volume
         
         const wrongSynth = new Tone.Synth().toDestination();
         wrongSynth.oscillator.type = "triangle";
-        wrongSynth.volume.value = 5; // 增加答错音量
+        wrongSynth.volume.value = 2; // Slightly boosted
         
-        // 核心修复：强制唤醒音频和语音引擎
+        // Function to unlock audio context securely upon user interaction
         async function initAudioEngine() {
             if (!toneStarted) {
                 try {
                     await Tone.start();
                     toneStarted = true;
-                    // 播放一段无声的空白语音，强制解锁浏览器的 TTS (Text-to-Speech) 限制
+                    // Play a silent utterance to unlock the SpeechSynthesis engine
                     if ('speechSynthesis' in window) {
                         const unlockMsg = new SpeechSynthesisUtterance('');
                         unlockMsg.volume = 0;
                         window.speechSynthesis.speak(unlockMsg);
                     }
+                    console.log("Audio Engine Successfully Unlocked.");
                 } catch (error) {
                     console.warn("Audio failed to start:", error);
                 }
             }
         }
 
-        // Initialize Audio Context on first interaction
-        document.body.addEventListener('click', initAudioEngine);
+        // Initialize Audio Context on FIRST interaction with the document (Crucial for GitHub Pages / Web)
+        document.body.addEventListener('click', initAudioEngine, { once: false });
 
         // Sound Effect Functions
         function playCorrectSound() {
@@ -329,17 +330,17 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel(); // Stop any currently playing audio
                 
-                // Clean HTML tags from the subtitle (e.g. Boss:)
+                // Clean HTML tags and character names from the subtitle
                 let cleanText = text.replace(/<[^>]*>?/gm, '');
-                if(cleanText.startsWith("Boss:")) cleanText = cleanText.substring(5);
+                if(cleanText.startsWith("Boss:")) cleanText = cleanText.substring(5).trim();
 
                 const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.lang = 'en-US'; // English US
+                utterance.lang = 'en-US'; 
                 utterance.pitch = 0.7; // Deeper pitch for the boss
                 utterance.rate = 0.9;  // Slightly slower for clarity
-                utterance.volume = 1.0; // 确保音量最大
+                utterance.volume = 1.0; 
                 
-                // 为了防止部分浏览器语音引擎休眠，加一个极短的延迟
+                // Slight delay to prevent engine sleep issues on some browsers
                 setTimeout(() => {
                     window.speechSynthesis.speak(utterance);
                 }, 50);
@@ -430,7 +431,7 @@
         ];
 
         function switchView(viewId) {
-            initAudioEngine(); // 确保每次切换页面时音频引擎都是激活状态
+            initAudioEngine(); // Ensure engine is awake when navigating menus
             stopAudio(); // Ensure audio stops when changing screens
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -497,6 +498,7 @@
         }
 
         function playCurrentScenario() {
+            initAudioEngine(); // Double check audio is ready
             const data = module1Data[currentQuestionIndex];
             
             // Trigger AI Voice-over
@@ -520,7 +522,7 @@
             const data = module1Data[currentQuestionIndex];
             const outcome = data.choices[choiceIndex];
             
-            // Audio Feedback
+            // Audio Feedback trigger
             if (outcome.points > 0) {
                 playCorrectSound();
             } else {
