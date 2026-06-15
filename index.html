@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Synthesized Audio Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/1.4.8/Tone.js"></script>
     
     <style>
         /* Strict single page, no scroll layout */
@@ -36,7 +38,6 @@
 </head>
 <body class="text-slate-800 h-screen w-screen flex flex-col">
 
-    <!-- Top Navigation Bar (Fixed Height) -->
     <nav class="bg-white shadow-sm px-6 py-3 flex justify-between items-center z-10 shrink-0 h-[72px]">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">
@@ -78,8 +79,8 @@
                             <span class="font-medium">Based on Cognitive Load Theory (CLT)</span>
                         </div>
                         <div class="flex items-center gap-3 text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <i class="fa-solid fa-vr-cardboard text-blue-500 text-xl"></i>
-                            <span class="font-medium">Interactive First-Person (POV) Scenarios</span>
+                            <i class="fa-solid fa-headphones text-green-500 text-xl"></i>
+                            <span class="font-medium">AI Voice-over & Audio Feedback Integrated</span>
                         </div>
                     </div>
 
@@ -146,7 +147,7 @@
                     </div>
                 </div>
 
-                <!-- Module 3 -->
+                <!-- Module 3 (Initially Locked) -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full relative overflow-hidden">
                     <div class="flex-1 relative bg-slate-800">
                         <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80" alt="Business Dinner" class="absolute inset-0 w-full h-full object-cover opacity-40 grayscale">
@@ -179,7 +180,7 @@
                     </div>
                     <p id="scenario-location" class="text-slate-500 text-xs md:text-sm mt-1"><i class="fa-solid fa-location-dot mr-1 text-red-500"></i> Kuala Lumpur, Malaysia HQ</p>
                 </div>
-                <button onclick="switchView('view-map')" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
+                <button onclick="stopAudio(); switchView('view-map')" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2">
                     <i class="fa-solid fa-door-open"></i> <span class="hidden md:inline">Exit Drill</span>
                 </button>
             </div>
@@ -198,7 +199,7 @@
                             <div class="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center text-blue-600 text-3xl shadow-[0_0_20px_rgba(255,255,255,0.5)] hover:scale-110 transition-transform">
                                 <i class="fa-solid fa-play ml-1"></i>
                             </div>
-                            <p class="absolute bottom-6 text-white font-bold tracking-widest uppercase text-sm drop-shadow-md bg-black/50 px-4 py-1 rounded-full">Click to Play Scenario</p>
+                            <p class="absolute bottom-6 text-white font-bold tracking-widest uppercase text-sm drop-shadow-md bg-black/50 px-4 py-1 rounded-full"><i class="fa-solid fa-volume-high mr-2"></i>Click to Play Scenario</p>
                         </div>
 
                         <!-- Dynamic Subtitle -->
@@ -271,8 +272,65 @@
 
     </main>
 
-    <!-- App Logic -->
     <script>
+        // --- AUDIO ENGINE SETUP (Tone.js & Web Speech API) ---
+        let toneStarted = false;
+        
+        // Synths for Sound Effects
+        const correctSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const wrongSynth = new Tone.Synth().toDestination();
+        wrongSynth.oscillator.type = "triangle";
+        
+        // Initialize Audio Context on first interaction
+        document.body.addEventListener('click', async () => {
+            if (!toneStarted) {
+                await Tone.start();
+                toneStarted = true;
+            }
+        });
+
+        // Sound Effect Functions
+        function playCorrectSound() {
+            if (toneStarted) correctSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n");
+        }
+        
+        function playWrongSound() {
+            if (toneStarted) wrongSynth.triggerAttackRelease("C2", "8n");
+        }
+
+        function playSuccessFanfare() {
+            if (toneStarted) {
+                const now = Tone.now();
+                correctSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+                correctSynth.triggerAttackRelease(["F4", "A4", "C5"], "8n", now + 0.2);
+                correctSynth.triggerAttackRelease(["G4", "B4", "D5"], "8n", now + 0.4);
+                correctSynth.triggerAttackRelease(["C5", "E5", "G5"], "4n", now + 0.6);
+            }
+        }
+
+        // Voice-over function
+        function speakDialogue(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any currently playing audio
+                
+                // Clean HTML tags from the subtitle (e.g. Boss:)
+                let cleanText = text.replace(/<[^>]*>?/gm, '');
+                if(cleanText.startsWith("Boss:")) cleanText = cleanText.substring(5);
+
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'en-US'; // English US
+                utterance.pitch = 0.7; // Deeper pitch for the boss
+                utterance.rate = 0.9;  // Slightly slower for clarity
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function stopAudio() {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        // --- GAME STATE & DATA ---
         let globalPoints = 0;
         let radarChartInstance = null;
         let currentQuestionIndex = 0;
@@ -292,7 +350,7 @@
                     {
                         id: 'A', label: 'Direct Refusal', text: "I can't. I have other plans.",
                         image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=1000&q=80", 
-                        subtitle: "Boss: ...I see. (Looks offended)",
+                        subtitle: "Boss: ...I see.",
                         feedback: "<strong>Loss of 'Face'.</strong> In many Asian high-context cultures, direct refusal is seen as aggressive and disrespectful to hierarchy. It disrupts group harmony.",
                         radarImpact: [90, 20, 30, 20, 30], points: 0, color: "rgba(239, 68, 68, 0.5)",
                         btnClass: "hover:border-red-400 hover:bg-red-50 text-red-600"
@@ -326,7 +384,7 @@
                     {
                         id: 'A', label: 'Direct Criticism', text: "No, it's too rushed. We will definitely fail.",
                         image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1000&q=80",
-                        subtitle: "Boss: (Frowns) I didn't ask for a prediction of failure.",
+                        subtitle: "Boss: I didn't ask for a prediction of failure.",
                         feedback: "<strong>Public Embarrassment.</strong> Direct contradiction of a superior severely damages 'Face' and violates hierarchical norms.",
                         radarImpact: [95, 10, 10, 10, 20], points: 0, color: "rgba(239, 68, 68, 0.5)",
                         btnClass: "hover:border-red-400 hover:bg-red-50 text-red-600"
@@ -352,6 +410,7 @@
         ];
 
         function switchView(viewId) {
+            stopAudio(); // Ensure audio stops when changing screens
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
         }
@@ -417,23 +476,38 @@
         }
 
         function playCurrentScenario() {
+            const data = module1Data[currentQuestionIndex];
+            
+            // Trigger AI Voice-over
+            speakDialogue(data.initial.subtitle);
+
             // Hide play button, show subtitle, slight zoom for effect
             document.getElementById('play-overlay').style.display = 'none';
             document.getElementById('scenario-subtitle').style.opacity = '1';
             document.getElementById('scenario-image').style.transform = 'scale(1.03)';
             
-            // Delay showing options to simulate listening
+            // Show options shortly after speech starts
             setTimeout(() => {
                 const optionsContainer = document.getElementById('options-container');
                 optionsContainer.style.opacity = '1';
                 optionsContainer.style.pointerEvents = 'auto';
                 optionsContainer.style.transform = 'translateY(0)';
-            }, 600);
+            }, 800);
         }
 
         function handleChoice(choiceIndex) {
             const data = module1Data[currentQuestionIndex];
             const outcome = data.choices[choiceIndex];
+            
+            // Audio Feedback
+            if (outcome.points > 0) {
+                playCorrectSound();
+            } else {
+                playWrongSound();
+            }
+
+            // Speak Boss Reaction
+            setTimeout(() => { speakDialogue(outcome.subtitle); }, 500);
             
             // Update Video/Image to Outcome
             document.getElementById('scenario-image').src = outcome.image;
@@ -487,6 +561,7 @@
         }
 
         function goToNextStep() {
+            stopAudio();
             currentQuestionIndex++;
             if (currentQuestionIndex < module1Data.length) {
                 renderQuestion();
@@ -496,6 +571,7 @@
         }
 
         function showCompletionScreen() {
+            playSuccessFanfare();
             document.getElementById('final-module-score').innerText = `+${currentModuleScore}`;
             const overlay = document.getElementById('completion-overlay');
             overlay.classList.remove('hidden');
