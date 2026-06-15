@@ -126,7 +126,7 @@
                     </div>
                 </div>
 
-                <!-- Module 2 (Initially Locked) -->
+                <!-- Module 2 -->
                 <div id="module-2-card" class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full relative overflow-hidden transition-all duration-500">
                     <div class="flex-1 relative bg-slate-800" id="mod2-img-container">
                         <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80" alt="Meeting Room" class="absolute inset-0 w-full h-full object-cover opacity-40 grayscale transition-all duration-500" id="mod2-img">
@@ -205,7 +205,7 @@
                         <div class="subtitle-box shadow-lg opacity-0 transition-opacity duration-500" id="scenario-subtitle"></div>
                     </div>
 
-                    <!-- Branching Options -->
+                    <!-- Branching Options (Hidden initially, shown after 'Play') -->
                     <div id="options-container" class="flex-1 bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 overflow-y-auto opacity-0 pointer-events-none transition-all duration-500 transform translate-y-4">
                         <h3 class="font-bold text-slate-700 mb-1 text-sm uppercase tracking-wide flex items-center gap-2"><i class="fa-solid fa-comment-dots text-blue-500"></i> Select Your Response:</h3>
                         <div id="dynamic-choices" class="flex flex-col gap-3">
@@ -248,7 +248,7 @@
                     </div>
                 </div>
 
-                <!-- MODULE COMPLETION OVERLAY -->
+                <!-- MODULE COMPLETION OVERLAY (Hidden initially) -->
                 <div id="completion-overlay" class="absolute inset-0 bg-white z-30 rounded-xl shadow-lg border border-slate-200 hidden flex-col items-center justify-center p-8 text-center">
                     <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-5xl mb-6 shadow-inner">
                         <i class="fa-solid fa-award"></i>
@@ -271,15 +271,15 @@
 
     </main>
 
-    <!-- App Logic -->
     <script>
+        // Global State
         let globalPoints = 0;
         let radarChartInstance = null;
         let currentQuestionIndex = 0;
         let currentModuleScore = 0;
-        const baseRadarData = [50, 50, 50, 50, 50]; 
+        const baseRadarData = [50, 50, 50, 50, 50]; // [Directness, Formality, Hierarchy, Harmony, Context]
 
-        // MULTI-STEP DATA STRUCTURE
+        // --- NEW MULTI-STEP DATA STRUCTURE ---
         const module1Data = [
             {
                 title: "The Indirect Refusal Challenge",
@@ -290,24 +290,27 @@
                 },
                 choices: [
                     {
-                        id: 'A', label: 'Direct Refusal', text: "I can't. I have other plans.",
-                        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=1000&q=80", 
+                        id: 'A',
+                        label: 'Direct Refusal', text: "I can't. I have other plans.",
+                        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=1000&q=80", // Stern
                         subtitle: "Boss: ...I see. (Looks offended)",
                         feedback: "<strong>Loss of 'Face'.</strong> In many Asian high-context cultures, direct refusal is seen as aggressive and disrespectful to hierarchy. It disrupts group harmony.",
                         radarImpact: [90, 20, 30, 20, 30], points: 0, color: "rgba(239, 68, 68, 0.5)",
                         btnClass: "hover:border-red-400 hover:bg-red-50 text-red-600"
                     },
                     {
-                        id: 'B', label: 'Euphemistic Delay', text: "I would love to help. Could we prioritize the tasks for Monday morning?",
-                        image: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?auto=format&fit=crop&w=1000&q=80", 
+                        id: 'B',
+                        label: 'Euphemistic Delay', text: "I would love to help. Could we prioritize the tasks for Monday morning?",
+                        image: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?auto=format&fit=crop&w=1000&q=80", // Approving
                         subtitle: "Boss: Yes, prioritizing for Monday makes sense. Let's do that.",
                         feedback: "<strong>Excellent!</strong> The boss nods approvingly. This demonstrates the 'Saving Face' and 'Harmony' principles. Euphemistic delay solves the issue without direct confrontation.",
                         radarImpact: [30, 70, 80, 90, 85], points: 50, color: "rgba(34, 197, 94, 0.5)",
                         btnClass: "hover:border-green-400 hover:bg-green-50 text-green-600"
                     },
                     {
-                        id: 'C', label: 'Consult Colleague', text: "Let me seek advice from my team first.",
-                        image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1000&q=80", 
+                        id: 'C',
+                        label: 'Consult Colleague', text: "Let me seek advice from my team first.",
+                        image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1000&q=80", // Waiting
                         subtitle: "Boss: Alright, but I need an answer soon.",
                         feedback: "<strong>Safe but Indecisive.</strong> Seeking advice is good for building context, but delaying too much might show a lack of initiative in urgent situations.",
                         radarImpact: [40, 50, 60, 60, 70], points: 20, color: "rgba(59, 130, 246, 0.5)",
@@ -324,26 +327,29 @@
                 },
                 choices: [
                     {
-                        id: 'A', label: 'Direct Criticism', text: "No, it's too rushed. We will definitely fail.",
+                        id: 'A',
+                        label: 'Direct Criticism', text: "No, it's too rushed. We will definitely fail.",
                         image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1000&q=80",
                         subtitle: "Boss: (Frowns) I didn't ask for a prediction of failure.",
-                        feedback: "<strong>Public Embarrassment.</strong> Direct contradiction of a superior severely damages 'Face' and violates hierarchical norms.",
+                        feedback: "<strong>Public Embarrassment.</strong> Direct contradiction of a superior, especially in an open setting, severely damages 'Face' and violates hierarchical norms.",
                         radarImpact: [95, 10, 10, 10, 20], points: 0, color: "rgba(239, 68, 68, 0.5)",
                         btnClass: "hover:border-red-400 hover:bg-red-50 text-red-600"
                     },
                     {
-                        id: 'B', label: 'Indirect Suggestion', text: "It is very ambitious! I wonder if adding a slight buffer might make it even safer?",
+                        id: 'B',
+                        label: 'Indirect Suggestion', text: "It is very ambitious! I wonder if adding a slight buffer might make it even safer?",
                         image: "https://images.unsplash.com/photo-1556761175-5973dc0f32d7?auto=format&fit=crop&w=1000&q=80",
                         subtitle: "Boss: Good point. Let's build in a two-day buffer.",
-                        feedback: "<strong>Masterful Communication!</strong> You affirmed the boss's idea first, then phrased your critique as a collaborative question. This preserves hierarchy.",
+                        feedback: "<strong>Masterful Communication!</strong> You affirmed the boss's idea first ('ambitious'), then phrased your critique as a collaborative question. This preserves hierarchy while delivering necessary feedback.",
                         radarImpact: [40, 80, 90, 85, 90], points: 50, color: "rgba(34, 197, 94, 0.5)",
                         btnClass: "hover:border-green-400 hover:bg-green-50 text-green-600"
                     },
                     {
-                        id: 'C', label: 'Total Agreement', text: "It is perfect. We will follow it exactly.",
+                        id: 'C',
+                        label: 'Total Agreement', text: "It is perfect. We will follow it exactly.",
                         image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1000&q=80",
                         subtitle: "Boss: Great. Ensure it is done on time.",
-                        feedback: "<strong>Passive Risk.</strong> High-context cultures expect you to hint at problems, not ignore them completely.",
+                        feedback: "<strong>Passive Risk.</strong> While perfectly respectful of hierarchy, failing to communicate actual risks harms the project. High-context cultures expect you to hint at problems, not ignore them.",
                         radarImpact: [10, 90, 95, 80, 50], points: 10, color: "rgba(234, 179, 8, 0.5)",
                         btnClass: "hover:border-yellow-400 hover:bg-yellow-50 text-yellow-600"
                     }
@@ -351,11 +357,13 @@
             }
         ];
 
+        // Core View Switcher
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
         }
 
+        // --- MODULE ENGINE ---
         function startModule() {
             switchView('view-simulation');
             currentQuestionIndex = 0;
@@ -369,28 +377,28 @@
         function renderQuestion() {
             const data = module1Data[currentQuestionIndex];
             
-            // Update Headers
+            // 1. Update Headers
             document.getElementById('scenario-progress').innerText = `${currentQuestionIndex + 1} / ${module1Data.length}`;
             document.getElementById('scenario-title').innerText = data.title;
             document.getElementById('scenario-location').innerHTML = `<i class="fa-solid fa-location-dot mr-1 text-red-500"></i> ${data.location}`;
             
-            // Reset Media & Subtitle
+            // 2. Reset Video Player Area
             document.getElementById('scenario-image').src = data.initial.image;
             document.getElementById('scenario-image').style.transform = 'scale(1)';
             document.getElementById('scenario-subtitle').innerHTML = data.initial.subtitle;
             document.getElementById('scenario-subtitle').style.opacity = '0';
             
-            // Show Play Overlay, Hide Options
+            // Show Play Button
             document.getElementById('play-overlay').style.display = 'flex';
 
+            // 3. Reset Options Panel (Hidden until Play)
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.style.opacity = '0';
             optionsContainer.style.pointerEvents = 'none';
             optionsContainer.style.transform = 'translateY(16px)';
             
-            // Inject dynamic choices
             const choicesBox = document.getElementById('dynamic-choices');
-            choicesBox.innerHTML = ''; 
+            choicesBox.innerHTML = ''; // Clear old
             
             data.choices.forEach((choice, index) => {
                 const btnHTML = `
@@ -402,11 +410,11 @@
                 choicesBox.insertAdjacentHTML('beforeend', btnHTML);
             });
 
-            // Reset Feedback Panel
+            // 4. Reset Feedback Panel
             document.getElementById('feedback-panel').classList.add('hidden');
             document.getElementById('feedback-panel').classList.remove('flex');
             
-            // Reset Chart
+            // Reset Radar
             if(radarChartInstance) {
                 radarChartInstance.data.datasets[0].data = baseRadarData;
                 radarChartInstance.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.2)';
@@ -416,13 +424,16 @@
             }
         }
 
+        // Action when user clicks the video PLAY button
         function playCurrentScenario() {
-            // Hide play button, show subtitle, slight zoom for effect
+            // Hide play button
             document.getElementById('play-overlay').style.display = 'none';
+            
+            // Show Subtitle and slight zoom on image (simulating video start)
             document.getElementById('scenario-subtitle').style.opacity = '1';
             document.getElementById('scenario-image').style.transform = 'scale(1.03)';
             
-            // Delay showing options to simulate listening
+            // Fade in Options after a short delay (simulating listening)
             setTimeout(() => {
                 const optionsContainer = document.getElementById('options-container');
                 optionsContainer.style.opacity = '1';
@@ -431,33 +442,34 @@
             }, 600);
         }
 
+        // Action when user clicks an option (A, B, C)
         function handleChoice(choiceIndex) {
             const data = module1Data[currentQuestionIndex];
             const outcome = data.choices[choiceIndex];
             
-            // Update Video/Image to Outcome
+            // 1. Update Video visual to result
             document.getElementById('scenario-image').src = outcome.image;
             document.getElementById('scenario-subtitle').innerHTML = outcome.subtitle;
             
-            // Lock buttons
+            // 2. Disable all buttons
             document.querySelectorAll('.option-btn').forEach(btn => {
                 btn.style.opacity = '0.5';
                 btn.style.pointerEvents = 'none';
             });
 
-            // Update Points
+            // 3. Update Points
             currentModuleScore += outcome.points;
             globalPoints += outcome.points;
             
-            // Navbar points pulse effect
             const pointsDisplay = document.getElementById('nav-points');
             pointsDisplay.innerText = `Points: ${globalPoints}`;
             
+            // Point animation effect
             const pointsContainer = document.getElementById('nav-points-container');
             pointsContainer.classList.add('bg-green-200');
             setTimeout(() => pointsContainer.classList.remove('bg-green-200'), 500);
 
-            // Show Feedback Panel
+            // 4. Show Feedback Panel
             const feedbackPanel = document.getElementById('feedback-panel');
             feedbackPanel.classList.remove('hidden');
             feedbackPanel.classList.add('flex');
@@ -466,7 +478,7 @@
             document.getElementById('feedback-points').innerText = `+${outcome.points}`;
             feedbackPanel.style.borderTop = `4px solid ${outcome.color.replace('0.5', '1')}`;
 
-            // Configure Next Button logic
+            // Configure Next Button text
             const nextBtn = document.getElementById('next-action-btn');
             if (currentQuestionIndex < module1Data.length - 1) {
                 nextBtn.innerHTML = `<span>Next Scenario</span> <i class="fa-solid fa-arrow-right"></i>`;
@@ -476,7 +488,7 @@
                 nextBtn.className = "mt-4 w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg text-sm font-bold transition-colors shadow-md flex justify-center items-center gap-2";
             }
 
-            // Animate Chart
+            // 5. Update Radar Chart
             if(radarChartInstance) {
                 radarChartInstance.data.datasets[0].data = outcome.radarImpact;
                 radarChartInstance.data.datasets[0].backgroundColor = outcome.color;
@@ -486,6 +498,7 @@
             }
         }
 
+        // Action when clicking 'Next Scenario' or 'Complete'
         function goToNextStep() {
             currentQuestionIndex++;
             if (currentQuestionIndex < module1Data.length) {
@@ -495,6 +508,7 @@
             }
         }
 
+        // Show Final Completion Screen inside the Simulation View
         function showCompletionScreen() {
             document.getElementById('final-module-score').innerText = `+${currentModuleScore}`;
             const overlay = document.getElementById('completion-overlay');
@@ -503,15 +517,15 @@
             overlay.style.animation = 'fadeIn 0.6s ease-out';
         }
 
+        // Return to map and visually unlock Module 2
         function unlockNextModule() {
-            // Return to map
             switchView('view-map');
             
-            // Gamification: Visually unlock Module 2
+            // Visually unlock Module 2
             const mod2Card = document.getElementById('module-2-card');
             mod2Card.classList.remove('border-slate-200');
             mod2Card.classList.add('border-blue-200', 'cursor-pointer', 'hover:shadow-xl', 'group');
-            mod2Card.setAttribute('onclick', 'startModule()'); // Make it playable
+            mod2Card.setAttribute('onclick', 'startModule()'); // Let them replay or imagine it goes to mod2
             
             const mod2Img = document.getElementById('mod2-img');
             mod2Img.classList.remove('opacity-40', 'grayscale');
@@ -535,6 +549,7 @@
             `;
         }
 
+        // Radar Chart Initializer
         function initRadarChart() {
             const ctx = document.getElementById('culturalRadarChart').getContext('2d');
             if(radarChartInstance) radarChartInstance.destroy();
